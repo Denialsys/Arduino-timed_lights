@@ -22,6 +22,6 @@ Low power sketch for **ESP12-e** with **DS3231** RTC module
 The following are the ESP12-e pin assignments:
  - D1 -> SCL pin of DS3231
  - D2 -> SDA pin of DS3231
- - D3 -> SQW pin of DS3231
- - D5 -> Boost converter pin
- - D6 -> Relay pin
+ - D5 -> SQW pin of DS3231
+ - D6 -> Boost converter pin
+ - D7 -> Relay pin
