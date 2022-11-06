@@ -11,29 +11,35 @@
  *    - set the current time
  *    - set the alarms for AM and PM alarms
  *    - clear alarms
+ *    - get the alarm status
+ *    - activate the boost and relay then deactivate boost again
+ *    - deactivate boost and relay
  *  
  * To do:
  *    - add the function for sleeping and waking up
- *    - add the function for checking the current alarm status
  *    - break the sketch into multiple tabs
  */
 
 
 #include <RTClib.h>
 #include "nodemcu_pins.h"
+RTC_DS3231 rtc;// declaring the RTC module
+
 String inputString = "";         // a String to hold incoming data
 volatile bool stringComplete = false;  // whether the string is complete
 
-#define boostPin D3
-#define relayPin D4
+#define alarmPin D5
+#define boostPin D6
+#define relayPin D7
 
-RTC_DS3231 rtc;// declaring the RTC module
 #define CLOCK_INTERRUPT_PIN 2
 
 unsigned long lastTimeDisplay = 0;
 
+void ICACHE_RAM_ATTR lowPowerSleep(); //Add to cache the ISR (Only for ESP12e)
+
 void setup() {
-  // put your setup code here, to run once:
+
   Serial.begin(9600);
   
   if(!rtc.begin()) {
@@ -51,6 +57,9 @@ void setup() {
 
   // We'll use the SQW pin for alarm so disable the pwm
   rtc.writeSqwPinMode(DS3231_OFF);
+  
+  pinMode(alarmPin, INPUT_PULLUP);
+  attachInterrupt(digitalPinToInterrupt(alarmPin), lowPowerSleep, FALLING);
 }
 
 void loop() {
@@ -62,8 +71,12 @@ void loop() {
     
   }else if (inputString.indexOf("SA") > -1){
     setAlarm();
-    
+
+  }else if (inputString.indexOf("GA") > -1){
+    getAlarms();
+
   }else {
+
     if(stringComplete) {
       Serial.println("Unrecognized command");
     }
@@ -129,11 +142,13 @@ void setAlarm(){
   if (inputString.indexOf("CA1") > -1){
     // Clear alarm 1
     rtc.clearAlarm(1);
+    rtc.disableAlarm(1);
     Serial.println("Alarm 1 cleared");
   }
   if (inputString.indexOf("CA2") > -1){
     // Clear alarm 2
     rtc.clearAlarm(2);
+    rtc.disableAlarm(2);
     Serial.println("Alarm 2 cleared");
   }
   if (inputString.indexOf("CA") > -1){
@@ -176,7 +191,7 @@ void displayTimeUpdate(short dispDelay){
   }
   
   DateTime rtcTime = rtc.now();
-  char dateTime[39];
+  char dateTime[41];
   
   sprintf(
     dateTime,
@@ -203,5 +218,35 @@ void activateRelay(){
 }
 
 void deactivateRelay(){
+  digitalWrite(boostPin, LOW);
   digitalWrite(relayPin, LOW);
+}
+
+void getAlarms(){
+
+  // Limitation:
+  // DS3231 Lib has no member function for checking if the alarm will trigger or not
+  
+  if(!stringComplete) return;  
+  // Check if there are alarms registered
+  DateTime alarm1 = rtc.getAlarm1();
+  DateTime alarm2 = rtc.getAlarm2();
+  char alarmStatus[36];
+  
+  //(<Alarm index> <hh:mm> - <has fired>/<mode>)
+  sprintf(
+    alarmStatus,
+    "(1* %02d:%02d - %01d/%02d),\n(2* %02d:%02d - %01d/%02d)",
+    alarm1.hour(), alarm1.minute(), rtc.alarmFired(1), rtc.getAlarm1Mode(),
+    alarm2.hour(), alarm2.minute(), rtc.alarmFired(2), rtc.getAlarm2Mode()
+  );
+  
+  Serial.println(alarmStatus);
+}
+
+void lowPowerSleep(){
+  // Add checking if it is really time to sleep or to start up the switches
+  deactivateRelay();
+  Serial.println("Low power sleep");
+  
 }
