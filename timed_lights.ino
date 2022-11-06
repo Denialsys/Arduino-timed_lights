@@ -13,8 +13,6 @@
  *    - clear alarms
  *  
  * To do:
- *    - add the functions for enabling / disabling the boost converter for relay
- *    - add the function for activating the relay
  *    - add the function for sleeping and waking up
  *    - add the function for checking the current alarm status
  *    - break the sketch into multiple tabs
@@ -22,8 +20,12 @@
 
 
 #include <RTClib.h>
+#include "nodemcu_pins.h"
 String inputString = "";         // a String to hold incoming data
 volatile bool stringComplete = false;  // whether the string is complete
+
+#define boostPin D3
+#define relayPin D4
 
 RTC_DS3231 rtc;// declaring the RTC module
 #define CLOCK_INTERRUPT_PIN 2
@@ -98,6 +100,8 @@ void setCurrentTime(){
   // Time format "yyyy/MM/dd hh/mm/ss"
   short spcIndex = inputString.indexOf(' ');
   String dateTime = inputString.substring(spcIndex+1);
+
+  // Change the magic numbers into for loop
   short yyyy = dateTime.substring(0, 4).toInt();
   short MM = dateTime.substring(5, 7).toInt();
   short dd = dateTime.substring(8, 10).toInt();
@@ -185,4 +189,19 @@ void displayTimeUpdate(short dispDelay){
     rtcTime.second()
   );
   Serial.println(dateTime);
+}
+
+void activateRelay(){
+  // Adjust the boost voltage (UP)
+
+  digitalWrite(boostPin, HIGH);
+  delay(300);
+  digitalWrite(relayPin, HIGH);
+
+  // Relay has latched adjust the boost voltage (DOWN) to conserve energy
+  digitalWrite(boostPin, LOW);
+}
+
+void deactivateRelay(){
+  digitalWrite(relayPin, LOW);
 }
