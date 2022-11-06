@@ -11,6 +11,9 @@ Low power sketch for **ESP12-e** with **DS3231** RTC module
     - _SA_: For set alarm, use 24-hour format
     - _Example_: "SA 11:59" (This will set the alarm at 11:59 AM, alarm will always recur) 
     - _Example_: "SA 14:00" (This will set the alarm at 2:00 PM, alarm will always recur)
+  - Each alarm can be cleared individualy using "SA CAx" on the serial monitor
+    - _Example_: "SA CA1" (This will clear the alarm 1 - ***AM***)
+    - _Example_: "SA CA1 CA2" (This will clear the alarm 1 and 2- ***AM*** and ***PM***)
   - The time can be adjusted using the syntax "SCT <yyyy/MM/dd hh/mm/ss>
     - _SCT_: For set current time, use 24-hour format
     - _Example_: "SCT 2022/11/01 14:01:59" (This will set the date and time to the parameter)
